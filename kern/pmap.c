@@ -380,7 +380,8 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
         page_table = (pde_t *) KADDR(PTE_ADDR(pde));
     }
     else if (create) {
-        struct PageInfo *pp_page_table = page_alloc(0);
+        struct PageInfo *pp_page_table = page_alloc(1);
+
         pp_page_table->pp_ref += 1;
         pde = pgdir[PDX(va)] = page2pa(pp_page_table) | PTE_P | PTE_U | PTE_W;
         page_table = (pde_t *) KADDR(PTE_ADDR(pde));
