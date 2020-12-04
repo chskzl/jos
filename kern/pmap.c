@@ -591,6 +591,24 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
 
+    uintptr_t va_lower = (uintptr_t) ROUNDDOWN(va, PGSIZE);
+    len = ROUNDUP(len, PGSIZE);
+    int i;
+    for (i = 0; i < len; i += PGSIZE) {
+        pte_t * p_pte = pgdir_walk(env->env_pgdir, (void *) (va_lower + i), 0);
+
+        if ((*p_pte & (perm | PTE_P)) != (perm | PTE_P)) {
+            // note: this is dumb
+            if ((va_lower + i) < (uintptr_t) va) {
+                user_mem_check_addr = (uintptr_t) va;
+            }
+            else {
+                user_mem_check_addr = va_lower;
+            }
+            return -E_FAULT;
+        }
+    }
+
 	return 0;
 }
 

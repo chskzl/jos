@@ -58,6 +58,7 @@ TRAPHANDLER_NOEC(t_device, T_DEVICE)
 TRAPHANDLER_NOEC(t_fperr, T_FPERR)
 TRAPHANDLER_NOEC(t_mchk, T_MCHK)
 TRAPHANDLER_NOEC(t_simderr, T_SIMDERR)
+TRAPHANDLER_NOEC(t_syscall, T_SYSCALL)
 
 TRAPHANDLER(t_dblflt, T_DBLFLT)
 TRAPHANDLER(t_tss, T_TSS)
@@ -82,8 +83,11 @@ _alltraps:
     pushl %ds
     pushl %es
     pushal
+
     movl $GD_KD, %eax
     movw %ax, %ds
     movw %ax, %es
-    push %esp
+
+    pushl %esp
+
     call trap
