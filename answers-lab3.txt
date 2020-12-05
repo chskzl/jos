@@ -1,0 +1,5 @@
+Question 1.
+It would be much harder to distinguish when a error code is needed and when to push a buffer value.
+
+Question 2.
+I think running interupts like that requires a higher priviledge level, in which case int 13 runs because a user program tried to something it wasn't allowed to.
