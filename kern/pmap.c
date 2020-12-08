@@ -229,7 +229,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-    boot_map_region(kern_pgdir, KERNBASE, ROUNDUP(~0 - KERNBASE, PGSIZE), 0, PTE_P | PTE_W);
+    boot_map_region(kern_pgdir, KERNBASE, ROUNDUP(~0 - KERNBASE + 1, PGSIZE), 0, PTE_P | PTE_W);
 
 
 	// Initialize the SMP-related parts of the memory map
@@ -284,6 +284,10 @@ mem_init_mp(void)
 	//
 	// LAB 4: Your code here:
 
+    int i = 0;
+    for (i = 0; i < NCPU; i++) {
+        boot_map_region(kern_pgdir, (KSTACKTOP-i*(KSTKSIZE+KSTKGAP)) - KSTKSIZE, KSTKSIZE, PADDR(&percpu_kstacks[i]), PTE_P | PTE_W);
+    }
 }
 
 // --------------------------------------------------------------
@@ -326,7 +330,7 @@ page_init(void)
 
     int i;
     for (i = 0; i < npages; i++) {
-        pages[i].pp_ref = 0;
+            pages[i].pp_ref = 0;
     }
 
     pages[0].pp_ref = 1;
@@ -335,6 +339,7 @@ page_init(void)
         pages[i].pp_ref = 1;
     }
 
+    pages[MPENTRY_PADDR/PGSIZE].pp_ref = 1;
 
 	for (i = 0; i < npages; i++) {
         if (pages[i].pp_ref == 0) {
@@ -632,7 +637,25 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+    size = ROUNDUP(size, PGSIZE);
+    if ((base + size) > MMIOLIM) {
+	    panic("MMIOLIM overflow :(");
+    }
+
+    uintptr_t pa_start = ROUNDDOWN(pa, PGSIZE);
+    uintptr_t pa_end = ROUNDUP(pa+size, PGSIZE);
+    uintptr_t pa_offset = pa & 0xfff;
+
+    if ((base + size) > MMIOLIM) {
+	    panic("MMIOLIM overflow :(");
+    }
+
+    boot_map_region(kern_pgdir, base, size, pa_start, PTE_P | PTE_W | PTE_PCD | PTE_PWT);
+
+    uintptr_t old_base = base;
+    base += size;
+
+    return (void *) (old_base + pa_offset);
 }
 
 static uintptr_t user_mem_check_addr;
@@ -1091,7 +1114,7 @@ check_page(void)
 	// check page mappings
 	assert(check_va2pa(kern_pgdir, mm1) == 0);
 	assert(check_va2pa(kern_pgdir, mm1+PGSIZE) == PGSIZE);
-	assert(check_va2pa(kern_pgdir, mm2) == 0);
+    assert(check_va2pa(kern_pgdir, mm2) == 0);
 	assert(check_va2pa(kern_pgdir, mm2+PGSIZE) == ~0);
 	// check permissions
 	assert(*pgdir_walk(kern_pgdir, (void*) mm1, 0) & (PTE_W|PTE_PWT|PTE_PCD));
